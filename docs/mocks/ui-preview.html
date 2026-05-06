@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Fil Poll / Metropolis — UI mockup</title>
+<style>
+  /* Theme — extracted from client/src/theme.tsx */
+  :root {
+    --text: #44474d;
+    --textDark: #111;
+    --bg: #ffffff;
+    --primary: #5c73c9;
+    --primaryActive: #4e65bd;
+    --secondary: #E6E0D4;
+    --mediumGray: #8f8f8f;
+    --lightGray: #afafaf;
+    --lighterGray: #e2ddd5;
+    --bgGrayLight: #f3f0e9;
+    --bgGray: #ede8dd;
+    --bgGrayActive: #ede4d1;
+    --bgDarkWhite: #f2f2ef;
+    --bgOffWhite: #faf9f6;
+    --bgWhite: #fff;
+    --green: #2fcc71;
+    --greenDeep: #539a33;
+    --red: #e74b3c;
+    --redDeep: #dd413c;
+    --prOpen: #64B75D;
+    --prDraft: #868D96;
+    --prMerged: #9C73EF;
+    --prClosed: #E55E51;
+    --pollBlue: #0090ff;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: Inter, "Instrument Sans", system-ui, sans-serif;
+    color: var(--text);
+    background: #ece7dc;
+    line-height: 1.45;
+  }
+  h1,h2,h3,h4 { font-family: "Instrument Sans", Inter, sans-serif; color: var(--textDark); }
+
+  /* Mock chrome */
+  .preview-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: #1f1f23; color: #f1ece2;
+    padding: 10px 18px;
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .preview-bar .label {
+    font-weight: 700; margin-right: 12px; font-size: 13px;
+    letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.7;
+  }
+  .preview-bar button {
+    background: transparent; color: #f1ece2;
+    border: 1px solid #4a4a52;
+    padding: 6px 12px; border-radius: 6px;
+    font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  .preview-bar button:hover { background: #2c2c33; }
+  .preview-bar button.active {
+    background: var(--primary); border-color: var(--primary); color: #fff;
+  }
+  .preview-bar .note {
+    margin-left: auto; font-size: 12px; opacity: 0.6;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* fake browser frame */
+  .frame {
+    max-width: 1180px;
+    margin: 26px auto;
+    background: var(--bg);
+    border: 1px solid #d6d0c2;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  }
+  .frame-bar {
+    display: flex; align-items: center; gap: 6px;
+    background: #ece7dc;
+    padding: 8px 12px;
+    border-bottom: 1px solid #d6d0c2;
+  }
+  .frame-bar .dot { width: 11px; height: 11px; border-radius: 50%; background: #c8c2b0; }
+  .frame-bar .url {
+    margin-left: 12px;
+    flex: 1; background: #fff;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 12px; color: #555;
+    border: 1px solid #d6d0c2;
+    font-family: monospace;
+  }
+
+  /* shared bits */
+  a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  a:hover { text-decoration: underline; }
+  .btn {
+    display: inline-block;
+    background: var(--primary); color: #fbf5e9 !important;
+    padding: 0.7em 1em 0.64em; border-radius: 4px;
+    font-size: 14px; font-weight: 600;
+    border: 0; cursor: pointer; font-family: inherit;
+  }
+  .btn:hover { background: var(--primaryActive); text-decoration: none !important; }
+  .btn-outline {
+    background: #fff; color: var(--text) !important;
+    border: 1px solid #d6d0c2;
+  }
+  .btn-outline:hover { background: var(--bgGrayLight); color: var(--text) !important; }
+  .btn-black {
+    display: inline-block;
+    background: #1f1f23; color: #fbf5e9 !important;
+    padding: 0.7em 1em 0.64em; border-radius: 4px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    border: 0; font-family: inherit;
+  }
+  .btn-vote {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; background: #fff;
+    border: 1px solid #d6d0c2; border-radius: 4px;
+    font-size: 14px; cursor: pointer; color: var(--text);
+    font-family: inherit;
+  }
+  .btn-vote:hover { background: var(--bgGrayLight); }
+
+  /* ---------------- Screen 1: Public landing (/about) ---------------- */
+  .home {
+    max-width: 62em;
+    margin: 0 auto;
+    padding: 24px 40px 48px;
+    background: var(--bg);
+  }
+  .home-header { display: flex; gap: 32px; margin-bottom: 56px; }
+  .home-header .left { flex: 3; max-width: 26em; padding-right: 16px; }
+  .home-header .right { flex: 3; padding-left: 16px; padding-top: 80px; }
+  .brand {
+    display: flex; align-items: center; gap: 9px;
+    margin-top: 56px; margin-bottom: 8px;
+  }
+  .brand .logo {
+    width: 20px; height: 20px;
+    background: radial-gradient(circle at 30% 30%, #f0caa5, #c89066);
+    border-radius: 50%; opacity: 0.81;
+  }
+  .brand .name { font-weight: 700; }
+  .home h1 {
+    font-size: 40px; line-height: 1.2; margin: 24px 0 24px;
+    font-weight: 700;
+  }
+  .home .lede { margin: 16px 0 32px; }
+  .home .ctas { display: flex; gap: 12px; }
+  .sample-card {
+    background: #faf7f2; color: #1f1f1f;
+    font-size: 14px; line-height: 1.35;
+    padding: 24px 30px;
+    margin-bottom: 2px;
+    box-shadow: 1px 2px 4px rgba(0,0,0,0.20);
+    border-radius: 2px;
+  }
+  .sample-card .bars {
+    display: flex; width: 200px; margin-top: 16px;
+  }
+  .sample-card .bars > div { height: 4px; }
+  .home-section {
+    max-width: 34em; margin: 96px auto 0;
+  }
+  .home-section h3 { font-size: 24px; padding-bottom: 16px; }
+  .grid-2 {
+    display: grid; grid-template-columns: 1fr 2fr;
+    gap: 8px; font-size: 15px;
+  }
+  .grid-2 > div {
+    border-top: 1px solid var(--lighterGray);
+    padding-top: 14px; padding-bottom: 4px;
+    line-height: 1.35;
+  }
+  .grid-2 > div:nth-last-child(-n+2) {
+    border-bottom: 1px solid var(--lighterGray);
+    padding-bottom: 12px;
+  }
+
+  /* ---------------- Screen 2: Dashboard ---------------- */
+  .dash {
+    display: flex; height: 720px; background: #F9F9FB;
+  }
+  .sidebar {
+    width: 320px; flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid var(--lighterGray);
+    display: flex; flex-direction: column;
+  }
+  .sidebar .brand-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 20px 18px 24px;
+  }
+  .sidebar .brand-row .logo {
+    width: 25px; height: 25px;
+    background: linear-gradient(135deg, #4783ff, #0090ff);
+    border-radius: 4px;
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 12px;
+  }
+  .nav-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 18px;
+    color: var(--text); font-size: 15px; cursor: pointer;
+    border-radius: 6px; margin: 0 8px;
+  }
+  .nav-row:hover { background: var(--bgGrayLight); }
+  .nav-row .icon { width: 18px; color: var(--mediumGray); }
+  .seg {
+    display: flex; padding: 8px 16px 6px;
+  }
+  .seg button {
+    flex: 1; padding: 8px 10px;
+    border: 1px solid var(--lighterGray);
+    background: #fff; cursor: pointer;
+    font-family: inherit; font-size: 14px;
+    color: var(--mediumGray);
+  }
+  .seg button:first-child { border-radius: 8px 0 0 8px; }
+  .seg button:last-child { border-radius: 0 8px 8px 0; }
+  .seg button.active { color: var(--primary); border-color: var(--primary); }
+  .seg .badge {
+    display: inline-block; margin-left: 4px;
+    background: rgba(92,115,201,0.1); color: var(--primary);
+    padding: 0 6px; border-radius: 10px; font-size: 11px;
+  }
+  .conv-list { flex: 1; overflow-y: auto; }
+  .conv-item {
+    padding: 12px 16px; cursor: pointer;
+    font-size: 15px; line-height: 1.2;
+    border-left: 3px solid transparent;
+    display: flex; gap: 8px;
+  }
+  .conv-item:hover { background: var(--bgGrayLight); }
+  .conv-item.active { background: var(--bgGray); }
+  .conv-item .icon { color: #84817D; padding-top: 2px; }
+  .conv-item .meta { opacity: 0.6; font-size: 12px; margin-top: 3px; }
+  .last-sync {
+    text-align: center; padding: 14px;
+    font-size: 13px; color: var(--mediumGray);
+    border-top: 1px solid var(--lighterGray);
+  }
+
+  .dash-main { flex: 1; overflow-y: auto; padding: 32px 40px; }
+  .welcome { text-align: center; margin-bottom: 28px; }
+  .welcome .logo {
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, #4783ff, #0090ff);
+    border-radius: 8px;
+    margin: 0 auto 16px;
+    display: grid; place-items: center; color: #fff;
+    font-weight: 700; font-size: 22px;
+  }
+  .welcome h2 { margin: 8px 0; font-size: 24px; }
+  .section-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .section-card {
+    background: #fff;
+    border: 1px solid #E8E8EB;
+    border-radius: 16px;
+    padding: 18px 20px;
+  }
+  .section-card .header { display: flex; gap: 10px; margin-bottom: 14px; }
+  .section-card .sep {
+    height: 1px; background: #E8E8EB; margin: 14px 0;
+  }
+  .conv-mini {
+    border: 1px solid #E8E8EB; border-radius: 8px;
+    padding: 10px; margin-bottom: 8px;
+    cursor: pointer; display: flex; gap: 10px;
+    background: #fff;
+  }
+  .conv-mini:hover { background: var(--bgOffWhite); }
+  .conv-mini .icon { padding-top: 2px; }
+  .conv-mini .ts { color: #888; font-size: 13px; margin-top: 3px; }
+
+  /* ---------------- Screen 3: FIP detail (sentiment check) ---------------- */
+  .conv-detail {
+    max-width: 760px; margin: 0 auto;
+    padding: 40px 24px;
+  }
+  .conv-detail h2 { margin: 0 0 12px; font-size: 28px; }
+  .meta-row { color: var(--mediumGray); font-size: 14px; margin-bottom: 20px; }
+  .meta-row .sep { margin: 0 6px; }
+  .frontmatter {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+  .frontmatter .row { display: flex; gap: 12px; padding: 4px 0; }
+  .frontmatter .key {
+    width: 120px; color: var(--mediumGray); font-weight: 600;
+  }
+  .frontmatter .val { flex: 1; }
+  .pill {
+    display: inline-block;
+    background: var(--bgGrayLight);
+    border: 1px solid var(--lighterGray);
+    border-radius: 12px;
+    padding: 1px 9px; font-size: 12px;
+    margin-right: 4px; color: var(--text);
+  }
+  .pill.status-draft { background: #f3f0e9; color: var(--prDraft); }
+  .pill.type-info { background: #eef4f7; color: #486684; }
+
+  .panel {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 18px 22px;
+    margin-bottom: 16px;
+  }
+  .panel h3 { margin: 0 0 12px; font-size: 16px; font-weight: 700; }
+  .sentiment {
+    display: flex; gap: 12px; margin-top: 6px;
+  }
+  .sentiment .col { flex: 1; text-align: center; }
+  .sentiment button {
+    width: 100%; height: 36px;
+    background: #fff; border: 1px solid #d6d0c2;
+    border-radius: 4px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; font-weight: 500; font-size: 15px;
+    font-family: inherit; color: var(--text);
+  }
+  .sentiment button:hover { background: var(--bgGrayLight); }
+  .sentiment .count {
+    font-size: 14px; margin-top: 6px;
+  }
+
+  .comments-list .comment {
+    border-bottom: 1px solid #eee;
+    padding: 12px 0;
+    font-size: 14px;
+  }
+  .comments-list .comment:last-child { border-bottom: 0; }
+  .comments-list .who {
+    font-weight: 600; color: var(--textDark); font-size: 13px;
+  }
+  .comments-list .when {
+    color: var(--mediumGray); font-size: 12px; margin-left: 6px;
+  }
+
+  /* ---------------- Screen 4: Polis voting ---------------- */
+  .polis-wrap {
+    max-width: 640px; margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  .polis-progress {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--mediumGray); font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .polis-progress .bar {
+    flex: 1; height: 4px; background: #eee; border-radius: 2px; overflow: hidden;
+  }
+  .polis-progress .bar .fill {
+    height: 100%; background: var(--primary); width: 35%;
+  }
+  .polis-stack {
+    position: relative;
+    min-height: 260px;
+  }
+  .polis-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.04);
+    min-height: 200px;
+    padding: 24px 32px;
+    display: flex; flex-direction: column;
+  }
+  .polis-card .body {
+    flex: 1; font-size: 17px; line-height: 1.5;
+    margin-bottom: 24px;
+  }
+  .polis-buttons {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .polis-buttons button { flex: 1; min-width: 120px; }
+  .compose {
+    margin-top: 24px;
+  }
+  .compose textarea {
+    width: 100%; min-height: 80px;
+    padding: 12px;
+    border: 1px solid var(--lighterGray);
+    border-radius: 4px;
+    font-family: inherit; font-size: 14px;
+    resize: vertical;
+  }
+  .compose-row { display: flex; justify-content: space-between; margin-top: 8px; align-items: center; }
+  .hint { font-size: 13px; color: var(--mediumGray); }
+
+  /* ---------------- Screen 5: Report ---------------- */
+  .report {
+    max-width: 62em; margin: 0 auto;
+    padding: 28px 32px;
+  }
+  .report h2 { margin-top: 0; font-size: 22px; }
+  .report-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin: 20px 0 32px;
+  }
+  .stat {
+    background: #fff; border: 1px solid #ddd;
+    padding: 14px 16px; border-radius: 4px;
+  }
+  .stat .v { font-size: 28px; font-weight: 700; color: var(--textDark); }
+  .stat .l { color: var(--mediumGray); font-size: 13px; }
+
+  .report-graph {
+    background: #fff; border: 1px solid #ddd;
+    padding: 24px; margin-bottom: 24px;
+    text-align: center;
+  }
+  .scatter {
+    width: 100%; height: 320px;
+    background:
+      radial-gradient(circle at 30% 60%, rgba(47,204,113,0.18) 0, rgba(47,204,113,0) 22%),
+      radial-gradient(circle at 70% 40%, rgba(231,75,60,0.18) 0, rgba(231,75,60,0) 22%),
+      radial-gradient(circle at 50% 70%, rgba(92,115,201,0.18) 0, rgba(92,115,201,0) 22%),
+      #fafaf7;
+    position: relative;
+    border: 1px dashed #ccc;
+  }
+  .scatter .dot {
+    position: absolute; width: 8px; height: 8px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .group-list .group {
+    background: #fff; border: 1px solid #ddd;
+    padding: 14px 18px; margin-bottom: 12px;
+    display: flex; gap: 14px; align-items: center;
+  }
+  .group .swatch {
+    width: 14px; height: 14px; border-radius: 50%;
+  }
+  .group .label { font-weight: 700; }
+  .group .desc { color: var(--mediumGray); font-size: 13px; }
+
+  /* utility icons (text glyphs) — keeps file zero-dependency */
+  .ico { font-style: normal; font-weight: 700; }
+  .ico-thumbup::before  { content: "👍"; }
+  .ico-thumbdn::before  { content: "👎"; }
+  .ico-skip::before     { content: "⏭"; }
+  .ico-smile::before    { content: "😊"; }
+  .ico-frown::before    { content: "☹"; }
+  .ico-poll::before     { content: "📊"; color: var(--pollBlue); }
+  .ico-pr::before       { content: "⤴"; color: var(--prOpen); }
+  .ico-fip::before      { content: "🎯"; }
+  .ico-info::before     { content: "ⓘ"; }
+  .ico-menu::before     { content: "☰"; }
+
+  .footer-note {
+    text-align: center; padding: 18px;
+    color: var(--mediumGray); font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<nav class="preview-bar">
+  <span class="label">Mock</span>
+  <button class="active" data-target="screen-home">Public landing (/about)</button>
+  <button data-target="screen-dash">Dashboard</button>
+  <button data-target="screen-fip">FIP / Sentiment Check</button>
+  <button data-target="screen-polis">Polis voting (/c/&hellip;)</button>
+  <button data-target="screen-report">Report (/r/&hellip;)</button>
+  <span class="note">Static visual mock &mdash; not the live app</span>
+</nav>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1 — Public landing                                     -->
+<!-- ============================================================ -->
+<section id="screen-home" class="screen active">
+  <div class="frame">
+    <div class="frame-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">https://poll.fil.org/about</span>
+    </div>
+    <div class="home">
+      <div class="home-header">
+        <div class="left">
+          <div class="brand">
+            <span class="logo"></span>
+            <span class="name">Fil Poll</span>
+          </div>
+          <h1>The collaborative consensus engine</h1>
+          <p class="lede">
+            Fil Poll is a tool for groups to identify shared opinions, beliefs, and ideas,
+            using collaborative polling and advanced statistics.
+          </p>
+          <div class="ctas">
+            <a href="#" class="btn-black">Go to app</a>
+            <a href="#" class="btn-black">Sign in with Github</a>
+          </div>
+        </div>
+        <div class="right">
+          <div class="sample-card">
+            The proposal to upgrade sector storage seems ready for launch.
+            <div class="bars">
+              <div style="width:28%; background:#7fc782"></div>
+              <div style="width:18%; background:#c75f4c"></div>
+              <div style="width:33%; background:#c9c5bb"></div>
+            </div>
+          </div>
+          <div class="sample-card">
+            We should consider using Matrix and Element for giving the community a place to
+            discuss governance issues. Their values around decentralization line up well with ours.
+            <div class="bars">
+              <div style="width:42%; background:#7fc782"></div>
+              <div style="width:11%; background:#c75f4c"></div>
+              <div style="width:26%; background:#c9c5bb"></div>
+            </div>
+          </div>
+          <div class="sample-card">
+            I'm personally overwhelmed by the number of governance platforms that I have to keep
+            up with. It would be easier to continue to use Github discussions.
+            <div class="bars">
+              <div style="width:18%; background:#7fc782"></div>
+              <div style="width:36%; background:#c75f4c"></div>
+              <div style="width:30%; background:#c9c5bb"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-section">
+        <h3>Ask any question</h3>
+        <div class="grid-2">
+          <div>Learn about members</div>
+          <div>“What makes you excited to be in this community?”</div>
+          <div>Collect feedback</div>
+          <div>“How could we improve our user interface?”</div>
+          <div>Set priorities</div>
+          <div>“Which initiatives should we focus on this year?”</div>
+          <div>Delegation support</div>
+          <div>“As a delegate, who do you represent? What perspectives do you bring to the table, and what kinds of proposals would you like to support?”</div>
+        </div>
+      </div>
+
+      <div class="home-section">
+        <h3>How it works</h3>
+        <p>1. The survey creator asks a question, seeding it with 10–15 suggested responses.</p>
+        <p>2. Participants vote on responses, contributing their own additions. The survey prioritizes which ones to show in realtime.</p>
+        <p>3. We generate a report of top responses, key opinion groups, areas of consensus, and points of further exploration.</p>
+      </div>
+
+      <div class="home-section">
+        <h3>Background</h3>
+        <p>
+          Fil Poll is an extended version of <a href="#">Polis</a>, an academically validated
+          collective-response survey used with groups of 200,000+ by governments and independent media.
+        </p>
+        <p>
+          Polis is typically used as a large-scale opinion poll. Fil Poll is for small communities
+          that align around a shared mission.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 2 — Dashboard landing                                  -->
+<!-- ============================================================ -->
+<section id="screen-dash" class="screen">
+  <div class="frame">
+    <div class="frame-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">https://poll.fil.org/dashboard</span>
+    </div>
+    <div class="dash">
+      <aside class="sidebar">
+        <div class="brand-row">
+          <span class="logo">F</span>
+          <strong>Fil Poll</strong>
+        </div>
+        <div class="nav-row"><span class="icon ico ico-poll"></span> Discussion Polling</div>
+        <div class="nav-row"><span class="icon ico ico-pr"></span> Sentiment Checks</div>
+        <div class="nav-row"><span class="icon ico ico-fip"></span> FIP Tracker</div>
+        <div class="seg">
+          <button class="active">All</button>
+          <button>Sentiment <span class="badge">12</span></button>
+          <button>Polls <span class="badge">3</span></button>
+        </div>
+        <div class="conv-list">
+          <div class="conv-item active">
+            <span class="icon ico ico-pr"></span>
+            <div>
+              <div>FIP-0100: Allow F4 sub-account creation</div>
+              <div class="meta">2 days ago · 247 views</div>
+            </div>
+          </div>
+          <div class="conv-item">
+            <span class="icon ico ico-pr"></span>
+            <div>
+              <div>FIP-0099: Storage onboarding cliff smoothing</div>
+              <div class="meta">5 days ago · 184 views</div>
+            </div>
+          </div>
+          <div class="conv-item">
+            <span class="icon ico ico-poll"></span>
+            <div>
+              <div>What governance platforms work best for you?</div>
+              <div class="meta">1 week ago · 312 views</div>
+            </div>
+          </div>
+          <div class="conv-item">
+            <span class="icon ico ico-pr"></span>
+            <div>
+              <div>FIP-0098: Drand network upgrade</div>
+              <div class="meta">2 weeks ago · 412 views</div>
+            </div>
+          </div>
+          <div class="conv-item">
+            <span class="icon ico ico-poll"></span>
+            <div>
+              <div>How should we structure delegate compensation?</div>
+              <div class="meta">3 weeks ago · 95 views</div>
+            </div>
+          </div>
+        </div>
+        <div class="last-sync">
+          Last sync: 4 minutes ago &nbsp; <a href="#">Sync now</a>
+        </div>
+      </aside>
+
+      <main class="dash-main">
+        <div class="welcome">
+          <div class="logo">F</div>
+          <h2>Welcome to Fil Poll</h2>
+          <div>A nonbinding sentiment check tool for the Filecoin community</div>
+        </div>
+
+        <div class="section-grid">
+          <div class="section-card">
+            <div class="header">
+              <span class="ico ico-poll"></span>
+              <div>
+                <strong>Initiate discussions, collect feedback, and respond to polls</strong>
+                on open-ended ideas.
+              </div>
+            </div>
+            <div class="sep"></div>
+            <p style="font-size:14px; margin: 4px 0 12px;">
+              The following discussion polls have been active recently:
+            </p>
+            <div class="conv-mini">
+              <span class="ico ico-poll"></span>
+              <div>
+                <div>What governance platforms work best for you?</div>
+                <div class="ts">Created 1 week ago</div>
+              </div>
+            </div>
+            <div class="conv-mini">
+              <span class="ico ico-poll"></span>
+              <div>
+                <div>How should we structure delegate compensation?</div>
+                <div class="ts">Created 3 weeks ago</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="header">
+              <span class="ico ico-pr"></span>
+              <div>
+                <strong>Signal your position</strong> on FIPs through sentiment checks.
+              </div>
+            </div>
+            <div class="sep"></div>
+            <p style="font-size:14px; margin: 4px 0 12px;">
+              The following FIPs are currently open for sentiment checks:
+            </p>
+            <div class="conv-mini">
+              <span class="ico ico-pr"></span>
+              <div>
+                <div>FIP-0100: Allow F4 sub-account creation</div>
+                <div class="ts">Created 2 days ago</div>
+              </div>
+            </div>
+            <div class="conv-mini">
+              <span class="ico ico-pr"></span>
+              <div>
+                <div>FIP-0099: Storage onboarding cliff smoothing</div>
+                <div class="ts">Created 5 days ago</div>
+              </div>
+            </div>
+            <div class="conv-mini">
+              <span class="ico ico-pr"></span>
+              <div>
+                <div>FIP-0098: Drand network upgrade</div>
+                <div class="ts">Created 2 weeks ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 3 — FIP detail / sentiment check                       -->
+<!-- ============================================================ -->
+<section id="screen-fip" class="screen">
+  <div class="frame">
+    <div class="frame-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">https://poll.fil.org/dashboard/c/4xrh9a8z2k</span>
+    </div>
+    <div class="dash">
+      <aside class="sidebar">
+        <div class="brand-row">
+          <span class="logo">F</span>
+          <strong>Fil Poll</strong>
+        </div>
+        <div class="nav-row"><span class="icon ico ico-poll"></span> Discussion Polling</div>
+        <div class="nav-row"><span class="icon ico ico-pr"></span> Sentiment Checks</div>
+        <div class="nav-row"><span class="icon ico ico-fip"></span> FIP Tracker</div>
+        <div class="seg">
+          <button>All</button>
+          <button class="active">Sentiment <span class="badge">12</span></button>
+          <button>Polls <span class="badge">3</span></button>
+        </div>
+        <div class="conv-list">
+          <div class="conv-item active">
+            <span class="icon ico ico-pr"></span>
+            <div>
+              <div>FIP-0100: Allow F4 sub-account creation</div>
+              <div class="meta">2 days ago · 247 views</div>
+            </div>
+          </div>
+          <div class="conv-item">
+            <span class="icon ico ico-pr"></span>
+            <div>
+              <div>FIP-0099: Storage onboarding cliff smoothing</div>
+              <div class="meta">5 days ago · 184 views</div>
+            </div>
+          </div>
+        </div>
+        <div class="last-sync">
+          Last sync: 4 minutes ago &nbsp; <a href="#">Sync now</a>
+        </div>
+      </aside>
+
+      <main class="dash-main" style="padding: 0;">
+        <div class="conv-detail">
+          <h2>FIP-0100: Allow F4 sub-account creation</h2>
+          <div class="meta-row">
+            Created by <a href="#">@some-fip-author</a>
+            <span class="sep">·</span> May 2, 2026
+            <span class="sep">·</span> 247 views
+          </div>
+
+          <div class="frontmatter">
+            <div class="row"><div class="key">FIP</div><div class="val">0100</div></div>
+            <div class="row"><div class="key">Title</div><div class="val">Allow F4 sub-account creation</div></div>
+            <div class="row"><div class="key">Author</div><div class="val">@some-fip-author, @another-author</div></div>
+            <div class="row"><div class="key">Status</div><div class="val"><span class="pill status-draft">Draft</span></div></div>
+            <div class="row"><div class="key">Type</div><div class="val"><span class="pill type-info">Technical</span></div></div>
+            <div class="row"><div class="key">Created</div><div class="val">2026-05-02</div></div>
+          </div>
+
+          <div class="panel">
+            <h3>Sentiment Check <span class="ico ico-info" style="opacity:.5; margin-left:4px;"></span></h3>
+            <div class="sentiment">
+              <div class="col">
+                <button>
+                  <span class="ico ico-smile" style="color: var(--green);"></span>
+                  Positive
+                </button>
+                <div class="count">14 positive</div>
+              </div>
+              <div class="col">
+                <button>
+                  <span class="ico ico-frown" style="color: var(--red);"></span>
+                  Negative
+                </button>
+                <div class="count">3 negative</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Comments</h3>
+            <div class="comments-list">
+              <div class="comment">
+                <div><span class="who">@validator-anna</span><span class="when">2 days ago</span></div>
+                <div>Looks good. The migration path is clear and the gas implications are
+                acceptable.</div>
+              </div>
+              <div class="comment">
+                <div><span class="who">@miner-bob</span><span class="when">1 day ago</span></div>
+                <div>I'd like to see test vectors covering the edge case where an existing F1
+                account also has a delegated address.</div>
+              </div>
+              <div class="comment">
+                <div><span class="who">@dev-carol</span><span class="when">8 hours ago</span></div>
+                <div>Agreed with @miner-bob — also worth specifying the behavior on revert.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 4 — Polis voting card stack                            -->
+<!-- ============================================================ -->
+<section id="screen-polis" class="screen">
+  <div class="frame">
+    <div class="frame-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">https://poll.fil.org/c/4xrh9a8z2k</span>
+    </div>
+    <div style="background: var(--bgOffWhite); padding-top: 1px;">
+      <div class="polis-wrap">
+        <h2 style="font-size:22px; margin: 8px 0 16px;">
+          What governance platforms work best for you?
+        </h2>
+        <div class="polis-progress">
+          <span>7 / 20 voted</span>
+          <span class="bar"><span class="fill"></span></span>
+          <span>13 left</span>
+        </div>
+
+        <div class="polis-stack">
+          <div class="polis-card">
+            <div class="body">
+              We should consider using Matrix and Element for giving the community a place to
+              discuss governance issues. Their values around decentralization line up well with
+              ours, and lots of other platforms use them.
+            </div>
+            <div class="polis-buttons">
+              <button class="btn-vote">
+                <span class="ico ico-thumbup" style="color: var(--green);"></span>
+                Agree <span class="hint" style="margin-left:auto;">A</span>
+              </button>
+              <button class="btn-vote">
+                <span class="ico ico-thumbdn" style="color: var(--red);"></span>
+                Disagree <span class="hint" style="margin-left:auto;">D</span>
+              </button>
+              <button class="btn-vote">
+                <span class="ico ico-skip"></span>
+                Skip <span class="hint" style="margin-left:auto;">S</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="compose">
+          <div class="hint" style="margin-bottom: 8px;">
+            Are your perspectives or experiences missing from this conversation? If so, add them
+            in the box below, one at a time. Others will vote on each statement individually.
+          </div>
+          <textarea placeholder="Add a new statement…"></textarea>
+          <div class="compose-row">
+            <span class="hint">Statements are anonymous to other voters.</span>
+            <button class="btn">Submit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 5 — Report                                             -->
+<!-- ============================================================ -->
+<section id="screen-report" class="screen">
+  <div class="frame">
+    <div class="frame-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">https://poll.fil.org/r/4xrh9a8z2k/8c2pq9rd5e</span>
+    </div>
+    <div class="report">
+      <h2>Report — What governance platforms work best for you?</h2>
+
+      <div class="report-stats">
+        <div class="stat"><div class="v">142</div><div class="l">Participants</div></div>
+        <div class="stat"><div class="v">38</div><div class="l">Statements</div></div>
+        <div class="stat"><div class="v">2,908</div><div class="l">Votes</div></div>
+        <div class="stat"><div class="v">3</div><div class="l">Opinion groups</div></div>
+      </div>
+
+      <div class="report-graph">
+        <div style="text-align:left; font-weight:700; margin-bottom: 8px;">Opinion groups (PCA projection)</div>
+        <div class="scatter">
+          <!-- Cluster A (green) -->
+          <span class="dot" style="left:32%; top:62%; background:#2fcc71;"></span>
+          <span class="dot" style="left:28%; top:55%; background:#2fcc71;"></span>
+          <span class="dot" style="left:35%; top:68%; background:#2fcc71;"></span>
+          <span class="dot" style="left:22%; top:58%; background:#2fcc71;"></span>
+          <span class="dot" style="left:38%; top:60%; background:#2fcc71;"></span>
+          <span class="dot" style="left:30%; top:50%; background:#2fcc71;"></span>
+          <span class="dot" style="left:25%; top:65%; background:#2fcc71;"></span>
+          <!-- Cluster B (red) -->
+          <span class="dot" style="left:70%; top:42%; background:#e74b3c;"></span>
+          <span class="dot" style="left:74%; top:38%; background:#e74b3c;"></span>
+          <span class="dot" style="left:68%; top:44%; background:#e74b3c;"></span>
+          <span class="dot" style="left:78%; top:48%; background:#e74b3c;"></span>
+          <span class="dot" style="left:72%; top:35%; background:#e74b3c;"></span>
+          <!-- Cluster C (blue) -->
+          <span class="dot" style="left:50%; top:72%; background:#5c73c9;"></span>
+          <span class="dot" style="left:54%; top:78%; background:#5c73c9;"></span>
+          <span class="dot" style="left:48%; top:75%; background:#5c73c9;"></span>
+          <span class="dot" style="left:46%; top:70%; background:#5c73c9;"></span>
+        </div>
+      </div>
+
+      <div class="group-list">
+        <div class="group">
+          <span class="swatch" style="background:#2fcc71;"></span>
+          <div>
+            <div class="label">Group A &middot; 47 participants</div>
+            <div class="desc">Generally favor open standards (Matrix, IPFS-based forums) over centralized hosting.</div>
+          </div>
+        </div>
+        <div class="group">
+          <span class="swatch" style="background:#e74b3c;"></span>
+          <div>
+            <div class="label">Group B &middot; 32 participants</div>
+            <div class="desc">Prefer Github-native discussion; concerned about platform proliferation.</div>
+          </div>
+        </div>
+        <div class="group">
+          <span class="swatch" style="background:#5c73c9;"></span>
+          <div>
+            <div class="label">Group C &middot; 38 participants</div>
+            <div class="desc">Want hybrid: real-time chat for casual discussion + Github for spec'd proposals.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:32px;">Consensus points</h3>
+      <div class="panel">
+        <div style="margin-bottom:8px;">
+          <strong>83% agree:</strong> Governance discussions should be archived in a public,
+          searchable place.
+        </div>
+        <div style="margin-bottom:8px;">
+          <strong>71% agree:</strong> The number of governance platforms is currently overwhelming.
+        </div>
+        <div>
+          <strong>68% agree:</strong> Final FIP decisions should always be recorded in the canonical Github repo.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="footer-note">
+  Static mock for design review. Real app: <code>client/</code> + <code>server/</code> in this repo.
+</div>
+
+<script>
+  (function () {
+    var buttons = document.querySelectorAll('.preview-bar button[data-target]');
+    var screens = document.querySelectorAll('.screen');
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = btn.getAttribute('data-target');
+        buttons.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        screens.forEach(function (s) {
+          s.classList.toggle('active', s.id === target);
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }());
+</script>
+
+</body>
+</html>
