@@ -472,6 +472,111 @@
     text-align: center; padding: 18px;
     color: var(--mediumGray); font-size: 12px;
   }
+
+  /* ---------------- Role / stakeholder selection ---------------- */
+  .onboarding { background: var(--bgOffWhite); min-height: 720px; }
+  .onb-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 32px; background: #fff;
+    border-bottom: 1px solid var(--lighterGray);
+  }
+  .onb-header .user-badge {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: var(--mediumGray);
+  }
+  .onb-header .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, #c9c5bb, #84817D);
+  }
+  .onb-body { max-width: 720px; margin: 0 auto; padding: 40px 32px 60px; }
+  .onb-body h1 { font-size: 32px; margin: 0 0 12px; }
+  .onb-body .lede { color: var(--mediumGray); font-size: 15px; margin-bottom: 32px; }
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .role-card {
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 16px;
+    background: #fff;
+    border: 2px solid var(--lighterGray);
+    border-radius: 10px;
+    padding: 20px;
+    cursor: pointer; position: relative;
+  }
+  .role-card:hover { border-color: var(--primary); }
+  .role-card.selected { border-color: var(--primary); background: #f7f8fc; }
+  .role-card input[type=checkbox] {
+    position: absolute; top: 16px; right: 16px;
+    width: 18px; height: 18px; cursor: pointer;
+    accent-color: var(--primary);
+  }
+  .role-icon {
+    width: 48px; height: 48px; border-radius: 8px;
+    background: var(--bgGrayLight);
+    display: grid; place-items: center; font-size: 22px;
+  }
+  .role-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; color: var(--textDark); }
+  .role-desc { font-size: 13px; line-height: 1.5; color: var(--text); margin-bottom: 12px; max-width: 36ch; }
+  .role-verify { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .verify-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 12px; font-weight: 600;
+  }
+  .verify-pill.pending  { background: #fff5e0; color: #8b6914; border: 1px solid #f0d97a; }
+  .verify-pill.verified { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .role-verify button {
+    font-size: 12px; padding: 4px 10px;
+    background: #fff; border: 1px solid var(--lighterGray);
+    border-radius: 4px; cursor: pointer; font-family: inherit;
+    color: var(--text);
+  }
+  .role-verify button:hover { background: var(--bgGrayLight); }
+  .onb-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 32px; padding-top: 24px;
+    border-top: 1px solid var(--lighterGray);
+  }
+  .onb-callout {
+    margin-top: 24px;
+    background: #fff8e6; border: 1px solid #f0d97a;
+    border-radius: 6px; padding: 12px 16px;
+    font-size: 13px; line-height: 1.5; color: #6c5a18;
+  }
+
+  /* role badges reused on voting + report screens */
+  .role-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+    background: var(--bgGrayLight); color: var(--text);
+    border: 1px solid var(--lighterGray);
+  }
+  .role-badge.sp     { background: #eef4f7; color: #486684; border-color: #c9d8e0; }
+  .role-badge.client { background: #f3eef7; color: #5e3c87; border-color: #d4c5e5; }
+  .role-badge.tok    { background: #fff5e0; color: #8b6914; border-color: #f0d97a; }
+  .role-badge.comm   { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+
+  .voting-as {
+    display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    font-size: 12px; color: var(--mediumGray);
+    background: #fff; padding: 8px 12px; border-radius: 4px;
+    border: 1px solid var(--lighterGray);
+    margin: 0 0 16px;
+  }
+
+  /* per-stakeholder breakdown rows in report */
+  .sh-row {
+    display: grid; grid-template-columns: 280px 1fr 100px;
+    gap: 14px; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid #f0ece2;
+    font-size: 14px;
+  }
+  .sh-row:last-child { border-bottom: 0; }
+  .sh-name { display: flex; flex-direction: column; gap: 2px; }
+  .sh-name .meta { color: var(--mediumGray); font-size: 12px; }
+  .sh-bar { height: 18px; border-radius: 3px; overflow: hidden; display: flex; background: #f5f0e3; }
+  .sh-bar .seg.agree    { background: var(--green); }
+  .sh-bar .seg.pass     { background: #c9c5bb; }
+  .sh-bar .seg.disagree { background: var(--red); }
+  .sh-pct { text-align: right; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -479,6 +584,7 @@
 <nav class="preview-bar">
   <span class="label">Mock</span>
   <button class="active" data-target="screen-home">Public landing (/about)</button>
+  <button data-target="screen-role">Pick role (post-signin)</button>
   <button data-target="screen-dash">Dashboard</button>
   <button data-target="screen-fip">FIP / Sentiment Check</button>
   <button data-target="screen-polis">Polis voting (/c/&hellip;)</button>
@@ -573,6 +679,112 @@
           Polis is typically used as a large-scale opinion poll. Fil Poll is for small communities
           that align around a shared mission.
         </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1.5 — Stakeholder role selection (post-signin)         -->
+<!-- ============================================================ -->
+<section id="screen-role" class="screen">
+  <div class="frame">
+    <div class="frame-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">https://poll.fil.org/onboarding/role</span>
+    </div>
+    <div class="onboarding">
+      <div class="onb-header">
+        <div class="brand" style="margin: 0;">
+          <span class="logo"></span>
+          <span class="name">Fil Poll</span>
+        </div>
+        <div class="user-badge">
+          <span class="avatar"></span>
+          <span>Signed in as <strong>@your-handle</strong></span>
+        </div>
+      </div>
+      <div class="onb-body">
+        <h1>How do you participate in Filecoin?</h1>
+        <p class="lede">
+          Tell us your role(s) so your votes can be shown alongside others in the same group.
+          Select all that apply &mdash; you can change this later. Stakeholder roles must be
+          verified by signing a message from the relevant on-chain address before they count
+          in stake-weighted polls.
+        </p>
+
+        <div class="role-grid">
+          <label class="role-card">
+            <input type="checkbox" />
+            <div class="role-icon">⚙</div>
+            <div class="role-info">
+              <div class="role-title">Storage Provider</div>
+              <div class="role-desc">
+                You operate Filecoin storage hardware. Influence weighted by raw byte power (RBP).
+              </div>
+              <div class="role-verify">
+                <span class="verify-pill pending">Verification needed</span>
+                <button>Connect miner address</button>
+              </div>
+            </div>
+          </label>
+
+          <label class="role-card">
+            <input type="checkbox" />
+            <div class="role-icon">📦</div>
+            <div class="role-info">
+              <div class="role-title">Client</div>
+              <div class="role-desc">
+                You store data on Filecoin. Influence weighted by total deal bytes.
+              </div>
+              <div class="role-verify">
+                <span class="verify-pill pending">Verification needed</span>
+                <button>Connect wallet</button>
+              </div>
+            </div>
+          </label>
+
+          <label class="role-card">
+            <input type="checkbox" />
+            <div class="role-icon">◈</div>
+            <div class="role-info">
+              <div class="role-title">Tokenholder</div>
+              <div class="role-desc">
+                You hold FIL. Influence weighted by token balance at vote start (snapshot).
+              </div>
+              <div class="role-verify">
+                <span class="verify-pill pending">Verification needed</span>
+                <button>Connect wallet</button>
+              </div>
+            </div>
+          </label>
+
+          <label class="role-card selected">
+            <input type="checkbox" checked />
+            <div class="role-icon">🛠</div>
+            <div class="role-info">
+              <div class="role-title">Developer / Community</div>
+              <div class="role-desc">
+                You contribute to Filecoin software, governance, or community.
+                Verified via your GitHub identity.
+              </div>
+              <div class="role-verify">
+                <span class="verify-pill verified">✓ Verified via @your-handle</span>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div class="onb-footer">
+          <a href="#" class="hint" style="font-size: 13px;">Skip for now</a>
+          <button class="btn">Continue</button>
+        </div>
+
+        <div class="onb-callout">
+          <strong>Heads up:</strong> Self-claimed roles are recorded but flagged as unverified.
+          They appear in 1-person-1-vote (unweighted) results and discussion polls. Stake-weighted
+          governance votes only count signatures from on-chain addresses.
+        </div>
       </div>
     </div>
   </div>
@@ -782,6 +994,12 @@
 
           <div class="panel">
             <h3>Sentiment Check <span class="ico ico-info" style="opacity:.5; margin-left:4px;"></span></h3>
+            <div class="voting-as">
+              Voting as
+              <span class="role-badge comm">✓ Developer</span>
+              <span class="role-badge tok">⚠ Tokenholder &middot; self-claimed</span>
+              <a href="#" style="font-size:12px; margin-left: 4px;">Verify</a>
+            </div>
             <div class="sentiment">
               <div class="col">
                 <button>
@@ -839,6 +1057,12 @@
         <h2 style="font-size:22px; margin: 8px 0 16px;">
           What governance platforms work best for you?
         </h2>
+        <div class="voting-as">
+          Voting as
+          <span class="role-badge comm">✓ Developer</span>
+          <span class="role-badge tok">⚠ Tokenholder &middot; self-claimed</span>
+          <a href="#" style="font-size:12px; margin-left: 4px;">Verify</a>
+        </div>
         <div class="polis-progress">
           <span>7 / 20 voted</span>
           <span class="bar"><span class="fill"></span></span>
@@ -951,6 +1175,68 @@
             <div class="desc">Want hybrid: real-time chat for casual discussion + Github for spec'd proposals.</div>
           </div>
         </div>
+      </div>
+
+      <h3 style="margin-top:32px;">Results by stakeholder group</h3>
+      <div class="panel">
+        <p style="font-size:13px; color:var(--mediumGray); margin: 0 0 16px;">
+          Aggregate sentiment per verified stakeholder group. Each row is unweighted within the
+          group (1 verified person = 1 vote). Self-claimed (unverified) participants are excluded
+          from this breakdown.
+        </p>
+        <div class="sh-row">
+          <div class="sh-name">
+            <span><span class="role-badge sp">Storage Providers</span></span>
+            <span class="meta">42 verified voters &middot; 142 EiB RBP represented</span>
+          </div>
+          <div class="sh-bar">
+            <div class="seg agree" style="width: 58%"></div>
+            <div class="seg pass" style="width: 26%"></div>
+            <div class="seg disagree" style="width: 16%"></div>
+          </div>
+          <div class="sh-pct"><strong>58%</strong> agree</div>
+        </div>
+        <div class="sh-row">
+          <div class="sh-name">
+            <span><span class="role-badge client">Clients</span></span>
+            <span class="meta">23 verified voters &middot; 8.4 PiB deal bytes</span>
+          </div>
+          <div class="sh-bar">
+            <div class="seg agree" style="width: 71%"></div>
+            <div class="seg pass" style="width: 18%"></div>
+            <div class="seg disagree" style="width: 11%"></div>
+          </div>
+          <div class="sh-pct"><strong>71%</strong> agree</div>
+        </div>
+        <div class="sh-row">
+          <div class="sh-name">
+            <span><span class="role-badge tok">Tokenholders</span></span>
+            <span class="meta">31 verified voters &middot; 12.4M FIL at snapshot</span>
+          </div>
+          <div class="sh-bar">
+            <div class="seg agree" style="width: 44%"></div>
+            <div class="seg pass" style="width: 31%"></div>
+            <div class="seg disagree" style="width: 25%"></div>
+          </div>
+          <div class="sh-pct"><strong>44%</strong> agree</div>
+        </div>
+        <div class="sh-row">
+          <div class="sh-name">
+            <span><span class="role-badge comm">Developers / Community</span></span>
+            <span class="meta">46 verified voters</span>
+          </div>
+          <div class="sh-bar">
+            <div class="seg agree" style="width: 64%"></div>
+            <div class="seg pass" style="width: 22%"></div>
+            <div class="seg disagree" style="width: 14%"></div>
+          </div>
+          <div class="sh-pct"><strong>64%</strong> agree</div>
+        </div>
+        <p style="font-size:12px; color:var(--mediumGray); margin: 12px 0 0;">
+          <span style="display:inline-block; width:10px; height:10px; background:var(--green); border-radius:2px; vertical-align:middle;"></span> agree &nbsp;
+          <span style="display:inline-block; width:10px; height:10px; background:#c9c5bb; border-radius:2px; vertical-align:middle;"></span> pass &nbsp;
+          <span style="display:inline-block; width:10px; height:10px; background:var(--red); border-radius:2px; vertical-align:middle;"></span> disagree
+        </p>
       </div>
 
       <h3 style="margin-top:32px;">Consensus points</h3>
