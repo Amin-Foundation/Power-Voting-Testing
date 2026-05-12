@@ -776,16 +776,20 @@
         </div>
         <div class="user-badge">
           <span class="avatar"></span>
-          <span>Signed in as <strong>@your-handle</strong></span>
+          <span>Signed in as <strong>@your-handle</strong> &middot; <span style="color:#047857;">✓ 8 months on GitHub</span></span>
         </div>
       </div>
       <div class="onb-body">
         <h1>How do you participate in Filecoin?</h1>
         <p class="lede">
-          Pick your primary role. We use it to group your vote alongside others like you in
-          results &mdash; it does not change how much your vote counts. All polls are
-          unweighted (1 verified person = 1 vote). For stakeholder roles you'll be asked to
-          sign a message from the relevant wallet on the next step. No transaction is sent.
+          Pick the role you want to vote as. We use it to group your vote alongside others
+          like you in results &mdash; it does not change how much your vote counts. All polls
+          are unweighted (1 verified person = 1 vote). You can switch role per poll later.
+          For stakeholder roles you'll be asked to sign a message from a wallet on the next
+          step. No transaction is sent.
+        </p>
+        <p style="font-size:12px; color: var(--mediumGray); margin: -16px 0 24px;">
+          To reduce spam, sign-in requires a GitHub account at least 1 day old.
         </p>
 
         <div class="role-grid">
@@ -825,11 +829,11 @@
             <div class="role-info">
               <div class="role-title">Tokenholder</div>
               <div class="role-desc">
-                You hold FIL. Verified by signing from any wallet holding a non-zero balance
-                at vote start.
+                You hold FIL. Verified by signing from a wallet with a balance of at least
+                <strong>1 FIL</strong> at vote start.
               </div>
               <div class="role-verify">
-                <span class="verify-pill pending">Requires wallet signature</span>
+                <span class="verify-pill pending">Requires wallet signature &middot; ≥ 1 FIL</span>
               </div>
             </div>
           </label>
@@ -844,7 +848,7 @@
                 Verified by your GitHub identity &mdash; no wallet needed.
               </div>
               <div class="role-verify">
-                <span class="verify-pill verified">✓ Verified via @your-handle</span>
+                <span class="verify-pill verified">✓ Verified &middot; @your-handle &middot; account 8mo old</span>
               </div>
             </div>
           </label>
@@ -857,9 +861,11 @@
 
         <div class="onb-callout">
           <strong>What "verified" means:</strong> for grouping purposes only. Every verified
-          person gets one vote, regardless of role, RBP, deal volume, or FIL balance. Self-claimed
-          (unverified) users may still participate, but their responses are flagged as such in
-          the results.
+          person gets one vote, regardless of role, RBP, deal volume, or FIL balance &mdash;
+          provided they meet the minimum threshold for that role (currently: ≥ 1 FIL for
+          Tokenholders; no balance threshold for Storage Providers or Clients). Self-claimed
+          (unverified) users may still participate, but their responses are flagged as such
+          in the results.
         </div>
       </div>
     </div>
@@ -917,12 +923,17 @@
             </button>
           </div>
 
-          <div class="verify-step-label">Step 2 &middot; Review and sign this message</div>
+          <div class="verify-step-label">Step 2 &middot; Eligibility check</div>
+          <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:6px; padding:10px 14px; font-size:13px; margin-bottom:16px; color:#065f46;">
+            ✓ Address balance: <strong>24.7 FIL</strong> &nbsp;(≥ 1 FIL required for Tokenholder)
+          </div>
+
+          <div class="verify-step-label">Step 3 &middot; Review and sign this message</div>
           <div class="sig-preview">poll.fil.org wants you to sign in with your Filecoin account:
 f410f7v3s9w8q1r2t5u6y8x0z1m2n4p6r7s9t1q2a
 
 I confirm that this address represents me on Fil Poll
-as a Tokenholder.
+as a Tokenholder, and that it holds at least 1 FIL.
 
 This is a message signature only. No transaction will be
 sent. No funds will move. No contract will be called.
@@ -1156,7 +1167,7 @@ Expiration Time: 2026-05-12T18:35:00Z</div>
             <div class="voting-as">
               Voting as
               <span class="role-badge tok">✓ Tokenholder</span>
-              <a href="#" style="font-size:12px; margin-left: 4px;">Change role</a>
+              <a href="#" style="font-size:12px; margin-left: 4px;" title="Switch role for this poll only">Change role for this poll</a>
             </div>
             <div class="sentiment">
               <div class="col">
