@@ -562,6 +562,80 @@
     margin: 0 0 16px;
   }
 
+  /* wallet verify modal */
+  .verify-scrim {
+    background: rgba(17, 17, 17, 0.45);
+    min-height: 720px;
+    padding: 60px 24px;
+    display: flex; align-items: flex-start; justify-content: center;
+  }
+  .verify-modal {
+    background: #fff; width: 100%; max-width: 520px;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  }
+  .verify-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; border-bottom: 1px solid var(--lighterGray);
+  }
+  .verify-head h2 { margin: 0; font-size: 18px; }
+  .verify-head .close {
+    background: transparent; border: 0; font-size: 22px;
+    cursor: pointer; color: var(--mediumGray); line-height: 1;
+  }
+  .verify-body { padding: 22px; }
+  .verify-step-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--mediumGray);
+    margin-bottom: 8px;
+  }
+  .wallet-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+  .wallet-opt {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: #fff; border: 1px solid var(--lighterGray);
+    border-radius: 8px; cursor: pointer; font-family: inherit;
+    width: 100%; text-align: left; font-size: 14px;
+    color: var(--text);
+  }
+  .wallet-opt:hover { background: var(--bgGrayLight); }
+  .wallet-opt.selected { border-color: var(--primary); background: #f7f8fc; }
+  .wallet-opt .w-icon {
+    width: 32px; height: 32px; border-radius: 6px;
+    display: grid; place-items: center; font-size: 16px;
+    background: var(--bgGrayLight);
+  }
+  .wallet-opt .w-name { font-weight: 600; }
+  .wallet-opt .w-sub  { color: var(--mediumGray); font-size: 12px; }
+
+  .sig-preview {
+    background: #faf7f2;
+    border: 1px solid var(--lighterGray);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #1f1f1f;
+    white-space: pre-wrap;
+    margin: 8px 0 14px;
+    max-height: 240px;
+    overflow: auto;
+  }
+  .safety-banner {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #ecfdf5; border: 1px solid #a7f3d0;
+    color: #065f46;
+    padding: 10px 14px; border-radius: 6px;
+    font-size: 13px; line-height: 1.45;
+    margin-bottom: 16px;
+  }
+  .safety-banner strong { color: #047857; }
+  .verify-actions {
+    display: flex; gap: 10px; justify-content: flex-end;
+    margin-top: 6px;
+  }
+
   /* per-stakeholder breakdown rows in report */
   .sh-row {
     display: grid; grid-template-columns: 280px 1fr 100px;
@@ -585,6 +659,7 @@
   <span class="label">Mock</span>
   <button class="active" data-target="screen-home">Public landing (/about)</button>
   <button data-target="screen-role">Pick role (post-signin)</button>
+  <button data-target="screen-verify">Verify wallet (sign msg)</button>
   <button data-target="screen-dash">Dashboard</button>
   <button data-target="screen-fip">FIP / Sentiment Check</button>
   <button data-target="screen-polis">Polis voting (/c/&hellip;)</button>
@@ -707,66 +782,66 @@
       <div class="onb-body">
         <h1>How do you participate in Filecoin?</h1>
         <p class="lede">
-          Tell us your role(s) so your votes can be shown alongside others in the same group.
-          Select all that apply &mdash; you can change this later. Stakeholder roles must be
-          verified by signing a message from the relevant on-chain address before they count
-          in stake-weighted polls.
+          Pick your primary role. We use it to group your vote alongside others like you in
+          results &mdash; it does not change how much your vote counts. All polls are
+          unweighted (1 verified person = 1 vote). For stakeholder roles you'll be asked to
+          sign a message from the relevant wallet on the next step. No transaction is sent.
         </p>
 
         <div class="role-grid">
           <label class="role-card">
-            <input type="checkbox" />
+            <input type="radio" name="role" value="sp" />
             <div class="role-icon">⚙</div>
             <div class="role-info">
               <div class="role-title">Storage Provider</div>
               <div class="role-desc">
-                You operate Filecoin storage hardware. Influence weighted by raw byte power (RBP).
+                You operate Filecoin storage hardware. Verified by signing from your miner's
+                owner or worker address.
               </div>
               <div class="role-verify">
-                <span class="verify-pill pending">Verification needed</span>
-                <button>Connect miner address</button>
+                <span class="verify-pill pending">Requires wallet signature</span>
               </div>
             </div>
           </label>
 
           <label class="role-card">
-            <input type="checkbox" />
+            <input type="radio" name="role" value="client" />
             <div class="role-icon">📦</div>
             <div class="role-info">
               <div class="role-title">Client</div>
               <div class="role-desc">
-                You store data on Filecoin. Influence weighted by total deal bytes.
+                You store data on Filecoin. Verified by signing from a wallet associated with
+                an active deal.
               </div>
               <div class="role-verify">
-                <span class="verify-pill pending">Verification needed</span>
-                <button>Connect wallet</button>
+                <span class="verify-pill pending">Requires wallet signature</span>
               </div>
             </div>
           </label>
 
           <label class="role-card">
-            <input type="checkbox" />
+            <input type="radio" name="role" value="tok" />
             <div class="role-icon">◈</div>
             <div class="role-info">
               <div class="role-title">Tokenholder</div>
               <div class="role-desc">
-                You hold FIL. Influence weighted by token balance at vote start (snapshot).
+                You hold FIL. Verified by signing from any wallet holding a non-zero balance
+                at vote start.
               </div>
               <div class="role-verify">
-                <span class="verify-pill pending">Verification needed</span>
-                <button>Connect wallet</button>
+                <span class="verify-pill pending">Requires wallet signature</span>
               </div>
             </div>
           </label>
 
           <label class="role-card selected">
-            <input type="checkbox" checked />
+            <input type="radio" name="role" value="comm" checked />
             <div class="role-icon">🛠</div>
             <div class="role-info">
               <div class="role-title">Developer / Community</div>
               <div class="role-desc">
                 You contribute to Filecoin software, governance, or community.
-                Verified via your GitHub identity.
+                Verified by your GitHub identity &mdash; no wallet needed.
               </div>
               <div class="role-verify">
                 <span class="verify-pill verified">✓ Verified via @your-handle</span>
@@ -777,13 +852,97 @@
 
         <div class="onb-footer">
           <a href="#" class="hint" style="font-size: 13px;">Skip for now</a>
-          <button class="btn">Continue</button>
+          <button class="btn">Continue &rarr; Sign with wallet</button>
         </div>
 
         <div class="onb-callout">
-          <strong>Heads up:</strong> Self-claimed roles are recorded but flagged as unverified.
-          They appear in 1-person-1-vote (unweighted) results and discussion polls. Stake-weighted
-          governance votes only count signatures from on-chain addresses.
+          <strong>What "verified" means:</strong> for grouping purposes only. Every verified
+          person gets one vote, regardless of role, RBP, deal volume, or FIL balance. Self-claimed
+          (unverified) users may still participate, but their responses are flagged as such in
+          the results.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1.6 — Verify wallet (message signature for role)       -->
+<!-- ============================================================ -->
+<section id="screen-verify" class="screen">
+  <div class="frame">
+    <div class="frame-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="url">https://poll.fil.org/onboarding/role/verify</span>
+    </div>
+    <div class="verify-scrim">
+      <div class="verify-modal">
+        <div class="verify-head">
+          <h2>Verify your role: Tokenholder</h2>
+          <button class="close" aria-label="Close">×</button>
+        </div>
+        <div class="verify-body">
+
+          <div class="safety-banner">
+            <span>🔒</span>
+            <div>
+              You will sign a <strong>message</strong>, not a transaction.
+              No FIL or other assets will move. No contract will be called.
+              You can read the exact text below before signing.
+            </div>
+          </div>
+
+          <div class="verify-step-label">Step 1 &middot; Connect wallet</div>
+          <div class="wallet-options">
+            <button class="wallet-opt selected" type="button">
+              <span class="w-icon">⬢</span>
+              <div>
+                <div class="w-name">MetaMask (Filecoin FEVM)</div>
+                <div class="w-sub">Connected &middot; f410f&hellip;7q2a</div>
+              </div>
+            </button>
+            <button class="wallet-opt" type="button">
+              <span class="w-icon">◐</span>
+              <div>
+                <div class="w-name">Glif Wallet</div>
+                <div class="w-sub">Native Filecoin addresses (f1/f3)</div>
+              </div>
+            </button>
+            <button class="wallet-opt" type="button">
+              <span class="w-icon">▣</span>
+              <div>
+                <div class="w-name">Ledger</div>
+                <div class="w-sub">Hardware wallet</div>
+              </div>
+            </button>
+          </div>
+
+          <div class="verify-step-label">Step 2 &middot; Review and sign this message</div>
+          <div class="sig-preview">poll.fil.org wants you to sign in with your Filecoin account:
+f410f7v3s9w8q1r2t5u6y8x0z1m2n4p6r7s9t1q2a
+
+I confirm that this address represents me on Fil Poll
+as a Tokenholder.
+
+This is a message signature only. No transaction will be
+sent. No funds will move. No contract will be called.
+
+URI: https://poll.fil.org
+Version: 1
+Chain ID: 314 (Filecoin Mainnet)
+Nonce: 8f3kZ9QrM2yLp
+Issued At: 2026-05-12T18:30:00Z
+Expiration Time: 2026-05-12T18:35:00Z</div>
+
+          <p style="font-size: 12px; color: var(--mediumGray); margin: 0 0 16px;">
+            The signature proves you control this address. It expires in 5 minutes and can only
+            be used once (nonce-bound). It will not be reused.
+          </p>
+
+          <div class="verify-actions">
+            <button class="btn-vote" type="button">Cancel</button>
+            <button class="btn" type="button">Sign message</button>
+          </div>
         </div>
       </div>
     </div>
@@ -996,9 +1155,8 @@
             <h3>Sentiment Check <span class="ico ico-info" style="opacity:.5; margin-left:4px;"></span></h3>
             <div class="voting-as">
               Voting as
-              <span class="role-badge comm">✓ Developer</span>
-              <span class="role-badge tok">⚠ Tokenholder &middot; self-claimed</span>
-              <a href="#" style="font-size:12px; margin-left: 4px;">Verify</a>
+              <span class="role-badge tok">✓ Tokenholder</span>
+              <a href="#" style="font-size:12px; margin-left: 4px;">Change role</a>
             </div>
             <div class="sentiment">
               <div class="col">
@@ -1059,9 +1217,8 @@
         </h2>
         <div class="voting-as">
           Voting as
-          <span class="role-badge comm">✓ Developer</span>
-          <span class="role-badge tok">⚠ Tokenholder &middot; self-claimed</span>
-          <a href="#" style="font-size:12px; margin-left: 4px;">Verify</a>
+          <span class="role-badge tok">✓ Tokenholder</span>
+          <a href="#" style="font-size:12px; margin-left: 4px;">Change role</a>
         </div>
         <div class="polis-progress">
           <span>7 / 20 voted</span>
@@ -1180,14 +1337,14 @@
       <h3 style="margin-top:32px;">Results by stakeholder group</h3>
       <div class="panel">
         <p style="font-size:13px; color:var(--mediumGray); margin: 0 0 16px;">
-          Aggregate sentiment per verified stakeholder group. Each row is unweighted within the
-          group (1 verified person = 1 vote). Self-claimed (unverified) participants are excluded
-          from this breakdown.
+          Aggregate sentiment per role. All polls are unweighted &mdash; every verified person
+          counts as one vote. Roles are for grouping only. Self-claimed (unverified)
+          participants are excluded from this breakdown.
         </p>
         <div class="sh-row">
           <div class="sh-name">
             <span><span class="role-badge sp">Storage Providers</span></span>
-            <span class="meta">42 verified voters &middot; 142 EiB RBP represented</span>
+            <span class="meta">42 verified voters</span>
           </div>
           <div class="sh-bar">
             <div class="seg agree" style="width: 58%"></div>
@@ -1199,7 +1356,7 @@
         <div class="sh-row">
           <div class="sh-name">
             <span><span class="role-badge client">Clients</span></span>
-            <span class="meta">23 verified voters &middot; 8.4 PiB deal bytes</span>
+            <span class="meta">23 verified voters</span>
           </div>
           <div class="sh-bar">
             <div class="seg agree" style="width: 71%"></div>
@@ -1211,7 +1368,7 @@
         <div class="sh-row">
           <div class="sh-name">
             <span><span class="role-badge tok">Tokenholders</span></span>
-            <span class="meta">31 verified voters &middot; 12.4M FIL at snapshot</span>
+            <span class="meta">31 verified voters</span>
           </div>
           <div class="sh-bar">
             <div class="seg agree" style="width: 44%"></div>
