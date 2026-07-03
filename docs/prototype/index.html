@@ -379,12 +379,12 @@ function saveStore() { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
 
 /* ---------------- roles / profiles ---------------- */
 var ROLES = [
-  { id: "sp",       name: "Storage Provider", weight: 3, emoji: "🖥️", desc: "Operates Filecoin storage; weight reflects committed power." },
-  { id: "allocator",name: "Allocator",        weight: 3, emoji: "🗝️", desc: "Allocates DataCap under the Fil+ program." },
-  { id: "token",    name: "Token Holder",     weight: 2, emoji: "🪙", desc: "Holds FIL; economic stake in outcomes." },
-  { id: "coredev",  name: "Core Developer",   weight: 2, emoji: "🛠️", desc: "Contributes to protocol / reference implementations." },
-  { id: "client",   name: "Client",           weight: 1, emoji: "📦", desc: "Stores data on the network." },
-  { id: "community",name: "Community Member",  weight: 1, emoji: "🌐", desc: "Ecosystem participant, no on-chain role required." }
+  { id: "sp",       name: "Storage Provider", desc: "Operates Filecoin storage capacity." },
+  { id: "allocator",name: "Allocator",        desc: "Allocates DataCap under the Fil+ program." },
+  { id: "token",    name: "Token Holder",     desc: "Holds FIL; economic stake in outcomes." },
+  { id: "coredev",  name: "Core Developer",   desc: "Contributes to protocol / reference implementations." },
+  { id: "client",   name: "Client",           desc: "Stores data on the network." },
+  { id: "community",name: "Community Member",  desc: "Ecosystem participant, no on-chain role required." }
 ];
 function roleById(id) { for (var i=0;i<ROLES.length;i++) if (ROLES[i].id===id) return ROLES[i]; return null; }
 
@@ -490,18 +490,55 @@ async function connectDemoWallet() {
   wallet = { address: addr, mode: "demo", _demoKey: kp };
   return wallet;
 }
+// Resolve an injected EVM provider. Prefers EIP-6963 (the modern provider
+// announcement current MetaMask uses), falls back to window.ethereum and the
+// multi-wallet providers[] array. Returns null if nothing is available.
+function getInjectedProviderSync() {
+  var eth = window.ethereum;
+  if (!eth) return null;
+  if (eth.providers && eth.providers.length) {
+    var mm = eth.providers.filter(function(p){ return p && p.isMetaMask; })[0];
+    return mm || eth.providers[0];
+  }
+  return eth;
+}
+function resolveProvider() {
+  return new Promise(function(resolve){
+    var found = [];
+    function on(e){ if (e && e.detail) found.push(e.detail); }
+    try {
+      window.addEventListener("eip6963:announceProvider", on);
+      window.dispatchEvent(new Event("eip6963:requestProvider"));
+    } catch (e) { /* older browsers: fall through to window.ethereum */ }
+    setTimeout(function(){
+      window.removeEventListener("eip6963:announceProvider", on);
+      if (found.length) {
+        var mm = found.filter(function(d){
+          var i = d.info || {}; return /metamask/i.test((i.rdns || "") + " " + (i.name || ""));
+        })[0];
+        resolve((mm || found[0]).provider);
+      } else {
+        resolve(getInjectedProviderSync());
+      }
+    }, 200);
+  });
+}
 async function connectInjectedWallet() {
-  if (!window.ethereum) throw new Error("No injected wallet found");
-  var accts = await window.ethereum.request({ method: "eth_requestAccounts" });
-  if (!accts || !accts.length) throw new Error("No account authorized");
-  wallet = { address: accts[0], mode: "injected" };
+  var provider = await resolveProvider();
+  if (!provider) {
+    throw new Error("No browser wallet detected. Install MetaMask (or another EVM wallet), or use the demo wallet.");
+  }
+  var accts = await provider.request({ method: "eth_requestAccounts" });
+  if (!accts || !accts.length) throw new Error("No account was authorized in the wallet");
+  wallet = { address: accts[0], mode: "injected", _provider: provider };
   return wallet;
 }
 // Sign a challenge. Real wallets -> EIP-191 personal_sign. Demo -> P-256 ECDSA.
 async function signChallenge(message) {
   if (!wallet) throw new Error("No wallet connected");
   if (wallet.mode === "injected") {
-    var sig = await window.ethereum.request({ method: "personal_sign", params: [message, wallet.address] });
+    var provider = wallet._provider || getInjectedProviderSync();
+    var sig = await provider.request({ method: "personal_sign", params: [message, wallet.address] });
     return { sig: sig, scheme: "eip191-personal_sign" };
   }
   var data = new TextEncoder().encode(message);
@@ -624,7 +661,6 @@ function renderWalletChip() {
 
 /* ---------------- view: connect ---------------- */
 function viewConnect() {
-  var hasInjected = !!window.ethereum;
   return '<div class="content"><div class="center-card">' +
     '<div class="brand-lg"><div class="logo">F</div><div>' +
       '<div class="name">Fil Poll</div>' +
@@ -634,16 +670,14 @@ function viewConnect() {
       'no email, no password. You then pick the <b>profile</b> your vote counts under, and you can ' +
       'change profile per topic.</p>' +
     '<div class="stack">' +
-      '<button class="btn" id="connectInjected"' + (hasInjected ? "" : " disabled") + '>' +
-        '🦊 Connect wallet' + (hasInjected ? "" : " (no extension detected)") + '</button>' +
-      '<button class="btn btn-outline" id="connectDemo">🧪 Use demo wallet (no extension needed)</button>' +
+      '<button class="btn" id="connectInjected">Connect wallet</button>' +
+      '<button class="btn btn-outline" id="connectDemo">Use demo wallet (no extension needed)</button>' +
     '</div>' +
     '<div class="callout info" style="margin-top:20px;">' +
-      '<b>Signing ≠ transacting.</b> Wallet signatures here only prove control of an address. ' +
+      '<b>Signing is not transacting.</b> Wallet signatures here only prove control of an address. ' +
       'They never move funds, approve tokens, or call contracts.</div>' +
-    (hasInjected ? "" :
-      '<p class="hint" style="margin-top:10px;">No browser wallet detected — the <b>demo wallet</b> ' +
-      'generates a throwaway keypair in memory so you can walk the full flow. Its key is never stored or shown.</p>') +
+    '<p class="hint" style="margin-top:10px;">Use a browser wallet such as MetaMask for real signatures, ' +
+    'or the <b>demo wallet</b> — a throwaway keypair generated in memory, never stored or shown — to explore the flow.</p>' +
   '</div></div>';
 }
 
@@ -654,9 +688,8 @@ function viewOnboard() {
   var roleCards = ROLES.map(function(r){
     var sel = prof.defaultRole === r.id ? " selected" : "";
     return '<div class="role-card' + sel + '" data-role="' + r.id + '">' +
-      '<div class="rc-top"><span>' + r.emoji + '</span>' +
-        '<span class="rc-name">' + r.name + '</span>' +
-        '<span class="rc-weight">×' + r.weight + '</span></div>' +
+      '<div class="rc-top">' +
+        '<span class="rc-name">' + r.name + '</span></div>' +
       '<div class="rc-desc">' + r.desc + '</div></div>';
   }).join("");
 
@@ -689,7 +722,7 @@ function viewOnboard() {
       (sess ?
         ('<div class="active-profile-bar"><span class="k">Active session for</span>' +
           '<span class="v" style="font-family:monospace">' + shortAddr(sess.address) + '</span>' +
-          '<span class="sess">🟢 valid ' + fmtRemaining(sess.expiresAt - nowMs()) + '</span>' +
+          '<span class="sess">Valid ' + fmtRemaining(sess.expiresAt - nowMs()) + '</span>' +
           '<button class="btn btn-danger btn-sm" id="revokeSess">Revoke</button></div>')
         : '') +
 
@@ -701,7 +734,7 @@ function viewOnboard() {
           ? 'Your connected address is listed above — select it to claim with its known role.'
           : 'Or claim your <b>currently connected</b> address directly:') +
       '</p>' +
-      '<button class="btn btn-outline" id="claimConnected">🔐 Claim my connected address</button>' +
+      '<button class="btn btn-outline" id="claimConnected">Claim my connected address</button>' +
     '</div>' +
 
     '<div class="row" style="justify-content:flex-end;gap:10px;">' +
@@ -756,7 +789,7 @@ function startClaim(targetAddr, roleId, sourceLabel) {
     '<div class="sig-preview">' + escapeHtml(challenge) + '</div>' +
     '<div class="row" style="justify-content:flex-end;gap:10px;">' +
       '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
-      '<button class="btn" id="doSign">🔏 Sign with wallet</button>' +
+      '<button class="btn" id="doSign">Sign with wallet</button>' +
     '</div>'
   );
 
@@ -769,7 +802,7 @@ function startClaim(targetAddr, roleId, sourceLabel) {
       if (signed.scheme.indexOf("p256") === 0 && addressMatches && signed._verifyKey) {
         verified = await verifyDemoSignature(challenge, signed.sig, signed._verifyKey, targetAddr);
         verifyNote = verified ? "verified in-browser ✓" : "verification FAILED";
-        if (!verified) { toast("Signature did not match address", "err"); this.disabled=false; this.textContent="🔏 Sign with wallet"; return; }
+        if (!verified) { toast("Signature did not match address", "err"); this.disabled=false; this.textContent="Sign with wallet"; return; }
       }
       // Record the delegated session. We persist the signature payload the
       // server would check — never any private key.
@@ -794,7 +827,7 @@ function startClaim(targetAddr, roleId, sourceLabel) {
       render();
     } catch (e) {
       toast("Signing was cancelled or failed", "err");
-      this.disabled = false; this.textContent = "🔏 Sign with wallet";
+      this.disabled = false; this.textContent = "Sign with wallet";
     }
   };
 }
@@ -821,7 +854,6 @@ function viewDashboard() {
   var items = polls.length ? polls.map(function(p){
     var votes = countVotes(p);
     return '<div class="poll-item" data-poll="' + p.id + '">' +
-      '<span class="ic">' + (p.type==="sentiment" ? "🎯" : "📊") + '</span>' +
       '<div style="flex:1"><div class="t">' + escapeHtml(p.title) +
         '<span class="type-tag ' + p.type + '">' + (p.type==="sentiment"?"Sentiment":"Discussion") + '</span></div>' +
         '<div class="m">' + votes.total + ' votes · ' + (p.type==="sentiment" ? (p.comments.length+" comments") : (p.statements.length+" statements")) +
@@ -831,10 +863,10 @@ function viewDashboard() {
   return '<div class="content">' +
     '<div class="active-profile-bar">' +
       '<span class="k">Voting as</span>' +
-      '<span class="v">' + (defRole ? (defRole.emoji + " " + defRole.name + " (×" + defRole.weight + ")") : "— pick a profile") + '</span>' +
+      '<span class="v">' + (defRole ? defRole.name : "— pick a profile") + '</span>' +
       '<a id="editProfile">change</a>' +
       (sess
-        ? '<span class="sess">🟢 delegated session · ' + fmtRemaining(sess.expiresAt - nowMs()) + ' left</span>'
+        ? '<span class="sess">Delegated session · ' + fmtRemaining(sess.expiresAt - nowMs()) + ' left</span>'
         : '<span class="sess" style="color:var(--mediumGray)">no delegated session</span>') +
     '</div>' +
 
@@ -870,26 +902,26 @@ function countVotes(p) {
   var total = p.votes.length;
   return { total: total };
 }
+// Every vote counts equally (unweighted). byRole keeps a per-profile breakdown
+// for the report, but it does not affect the tally.
 function weightedSentiment(p) {
   var pos = 0, neg = 0, byRole = {};
   p.votes.forEach(function(v){
-    var w = roleById(v.role) ? roleById(v.role).weight : 1;
     if (!byRole[v.role]) byRole[v.role] = { pos:0, neg:0 };
-    if (v.value === "pos") { pos += w; byRole[v.role].pos += 1; }
-    else if (v.value === "neg") { neg += w; byRole[v.role].neg += 1; }
+    if (v.value === "pos") { pos += 1; byRole[v.role].pos += 1; }
+    else if (v.value === "neg") { neg += 1; byRole[v.role].neg += 1; }
   });
-  var totW = pos + neg;
-  return { pos: pos, neg: neg, posPct: totW ? Math.round(pos/totW*100) : 0, negPct: totW ? Math.round(neg/totW*100) : 0, byRole: byRole, raw: p.votes.length };
+  var tot = pos + neg;
+  return { pos: pos, neg: neg, posPct: tot ? Math.round(pos/tot*100) : 0, negPct: tot ? Math.round(neg/tot*100) : 0, byRole: byRole, raw: p.votes.length };
 }
 function statementStats(p, sid) {
-  var agree=0, disagree=0, skip=0, aw=0, dw=0;
+  var agree=0, disagree=0, skip=0;
   p.votes.forEach(function(v){
     if (v.sid !== sid) return;
-    var w = roleById(v.role) ? roleById(v.role).weight : 1;
-    if (v.value==="agree"){agree++;aw+=w;} else if (v.value==="disagree"){disagree++;dw+=w;} else skip++;
+    if (v.value==="agree"){agree++;} else if (v.value==="disagree"){disagree++;} else skip++;
   });
   var tot = agree+disagree;
-  return { agree:agree, disagree:disagree, skip:skip, agreePct: tot?Math.round(agree/tot*100):0, aw:aw, dw:dw, totVotes: agree+disagree+skip };
+  return { agree:agree, disagree:disagree, skip:skip, agreePct: tot?Math.round(agree/tot*100):0, totVotes: agree+disagree+skip };
 }
 
 /* ---------------- view: poll (vote) ---------------- */
@@ -901,7 +933,7 @@ function viewPoll(pollId) {
 function profileControls(p) {
   var myRole = roleForPoll(p.id);
   var opts = ROLES.map(function(r){
-    return '<option value="' + r.id + '"' + (myRole===r.id?" selected":"") + '>' + r.emoji + " " + r.name + " (×" + r.weight + ")</option>";
+    return '<option value="' + r.id + '"' + (myRole===r.id?" selected":"") + '>' + r.name + "</option>";
   }).join("");
   return '<div class="active-profile-bar">' +
     '<span class="k">Voting on this topic as</span>' +
@@ -925,13 +957,13 @@ function viewSentimentPoll(p) {
     profileControls(p) +
     '<div class="card"><h3>Sentiment check</h3>' +
       '<div class="sentiment">' +
-        '<div class="col"><button id="votePos"><span style="color:var(--green)">😊</span> Positive</button>' +
-          '<div class="count">' + s.pos + ' weighted · ' + s.posPct + '%</div></div>' +
-        '<div class="col"><button id="voteNeg"><span style="color:var(--red)">☹</span> Negative</button>' +
-          '<div class="count">' + s.neg + ' weighted · ' + s.negPct + '%</div></div>' +
+        '<div class="col"><button id="votePos">Positive</button>' +
+          '<div class="count">' + s.pos + ' · ' + s.posPct + '%</div></div>' +
+        '<div class="col"><button id="voteNeg">Negative</button>' +
+          '<div class="count">' + s.neg + ' · ' + s.negPct + '%</div></div>' +
       '</div>' +
       '<div class="meter"><span class="pos" style="width:' + s.posPct + '%"></span><span class="neg" style="width:' + s.negPct + '%"></span></div>' +
-      '<p class="hint" style="margin-top:10px">Weighted by profile: ' + s.raw + ' raw votes. Positive weight ' + s.pos + ' vs negative ' + s.neg + '.</p>' +
+      '<p class="hint" style="margin-top:10px">' + s.pos + ' positive vs ' + s.neg + ' negative across ' + s.raw + ' votes.</p>' +
     '</div>' +
     sentimentAiPanel(p, s) +
     '<div class="card"><h3>Comments</h3>' + comments +
@@ -954,13 +986,13 @@ function viewDiscussionPoll(p) {
     var st = p.statements[idx];
     cardHtml = '<div class="polis-card"><div class="body">' + escapeHtml(st.text) + '</div>' +
       '<div class="polis-buttons">' +
-        '<button data-vote="agree"><span style="color:var(--green)">👍</span> Agree</button>' +
-        '<button data-vote="disagree"><span style="color:var(--red)">👎</span> Disagree</button>' +
-        '<button data-vote="skip"><span>⏭</span> Skip</button>' +
+        '<button data-vote="agree">Agree</button>' +
+        '<button data-vote="disagree">Disagree</button>' +
+        '<button data-vote="skip">Skip</button>' +
       '</div></div>';
   } else {
     cardHtml = '<div class="polis-card"><div class="body" style="display:flex;align-items:center;justify-content:center;color:var(--mediumGray)">' +
-      '✅ You\'ve voted on every statement. Add your own below, or view the report.</div></div>';
+      'You\'ve voted on every statement. Add your own below, or view the report.</div></div>';
   }
 
   return '<div class="content" style="max-width:640px">' +
@@ -1008,7 +1040,7 @@ function sentimentAiPanel(p, s) {
   var commentNet = commentScores.reduce(function(a,b){return a+b;}, 0);
   var commentTone = commentScores.length ? (commentNet>0?"broadly supportive":commentNet<0?"raising concerns":"mixed") : "";
 
-  var headline = "Community sentiment is " + tone + " (" + Math.max(s.posPct,s.negPct) + "% " + (lead?"positive":"negative") + ", weighted).";
+  var headline = "Community sentiment is " + tone + " (" + Math.max(s.posPct,s.negPct) + "% " + (lead?"positive":"negative") + ").";
   var l2 = posRoles.length ? ("Support is led by " + humanList(posRoles.slice(0,2)) + ".") : "";
   var l3 = negRoles.length ? ("Reservations come mainly from " + humanList(negRoles.slice(0,2)) + ".") : "";
   var l4 = p.comments.length
@@ -1024,7 +1056,7 @@ function sentimentAiPanel(p, s) {
   negRoles.slice(0,3).forEach(function(r){ chips += '<span class="chip neg">– ' + r + '</span>'; });
 
   return aiShell(
-    '<div class="headline">🧭 ' + escapeHtml(headline) + '</div>' +
+    '<div class="headline">' + escapeHtml(headline) + '</div>' +
     (l2?'<p>'+escapeHtml(l2)+' '+escapeHtml(l3)+'</p>':'') +
     '<p>' + escapeHtml(l4) + '</p>' +
     '<div style="margin:6px 0 10px">' + chips + '</div>' +
@@ -1039,7 +1071,7 @@ function discussionAiPanel(p) {
   var mostDivisive = divisive.length ? divisive[0] : null;
 
   var headline = withVotes.length
-    ? ("Across " + withVotes.length + " voted statements, " + consensus.length + " reached ≥70% weighted agreement.")
+    ? ("Across " + withVotes.length + " voted statements, " + consensus.length + " reached ≥70% agreement.")
     : "No votes yet — cast a few to generate insights.";
   var l2 = consensus.length ? ("Strongest consensus: “" + trim(consensus[0].st.text) + "” (" + consensus[0].s.agreePct + "% agree).") : "";
   var l3 = (mostDivisive && Math.abs(50-mostDivisive.s.agreePct) < 20)
@@ -1053,7 +1085,7 @@ function discussionAiPanel(p) {
   consensus.slice(0,3).forEach(function(x){ chips += '<span class="chip pos">' + x.s.agreePct + '% · ' + escapeHtml(trim(x.st.text, 34)) + '</span>'; });
 
   return aiShell(
-    '<div class="headline">🧭 ' + escapeHtml(headline) + '</div>' +
+    '<div class="headline">' + escapeHtml(headline) + '</div>' +
     (l2?'<p>'+escapeHtml(l2)+'</p>':'') +
     (l3?'<p>'+escapeHtml(l3)+'</p>':'') +
     '<div style="margin:6px 0 10px">' + chips + '</div>' +
@@ -1082,12 +1114,12 @@ function viewReport(pollId) {
   if (p.type === "sentiment") {
     var s = weightedSentiment(p);
     aiPanel = sentimentAiPanel(p, s);
-    breakdown = '<div class="card"><h3>Weighted result</h3>' +
+    breakdown = '<div class="card"><h3>Result</h3>' +
       barRow("Positive", s.posPct, "var(--green)") + barRow("Negative", s.negPct, "var(--red)") + '</div>' +
       roleBreakdown(p);
   } else {
     aiPanel = discussionAiPanel(p);
-    breakdown = '<div class="card"><h3>Per-statement agreement (weighted)</h3>' +
+    breakdown = '<div class="card"><h3>Per-statement agreement</h3>' +
       p.statements.map(function(st){
         var ss = statementStats(p, st.id);
         return barRow(trim(st.text, 60), ss.agreePct, "var(--primary)");
@@ -1116,7 +1148,7 @@ function roleBreakdown(p) {
   var s = weightedSentiment(p);
   var rows = Object.keys(s.byRole).map(function(rid){
     var r = roleById(rid), b = s.byRole[rid];
-    return '<div class="bars-row"><div class="lab">' + (r?r.emoji+" "+r.name:rid) + '</div>' +
+    return '<div class="bars-row"><div class="lab">' + (r?r.name:rid) + '</div>' +
       '<div class="muted">' + b.pos + ' pos · ' + b.neg + ' neg</div></div>';
   }).join("");
   return '<div class="card"><h3>By profile</h3>' + (rows || '<div class="hint">No votes yet.</div>') + '</div>';
@@ -1141,8 +1173,8 @@ function openCreatePoll() {
     '<h3>Create a poll</h3>' +
     '<label class="field" style="margin-top:10px">Type</label>' +
     '<div class="seg" style="margin-bottom:14px">' +
-      '<button id="tSent" class="active">🎯 Sentiment check</button>' +
-      '<button id="tDisc">📊 Discussion</button>' +
+      '<button id="tSent" class="active">Sentiment check</button>' +
+      '<button id="tDisc">Discussion</button>' +
     '</div>' +
     '<label class="field">Question / title</label>' +
     '<input type="text" id="npTitle" placeholder="e.g. FIP-0123: Raise sector minimum" />' +
@@ -1183,8 +1215,13 @@ function wireEvents() {
 
   // connect
   bind("connectInjected", "click", async function(){
+    var btn = this; btn.disabled = true; btn.textContent = "Connecting…";
     try { await connectInjectedWallet(); toast("Wallet connected", "ok"); go(needsOnboard()?"onboard":"dashboard"); }
-    catch(e){ toast("Could not connect wallet", "err"); }
+    catch(e){
+      var msg = (e && e.code === 4001) ? "Connection request was rejected in the wallet"
+        : (e && e.message) || "Could not connect wallet";
+      toast(msg, "err"); btn.disabled = false; btn.textContent = "Connect wallet";
+    }
   });
   bind("connectDemo", "click", async function(){
     try { await connectDemoWallet(); toast("Demo wallet ready", "ok"); go(needsOnboard()?"onboard":"dashboard"); }
