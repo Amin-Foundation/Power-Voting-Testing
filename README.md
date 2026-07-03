@@ -1,7 +1,10 @@
-# Metropolis (Fil Poll)
+# Metropolis is back! (Fil Poll v.2)
 
 Metropolis is an extended version of the Polis collective-response
-tool. So far, we have implemented:
+tool. 
+The tool is available following this link here: https://amin-foundation.github.io/Power-Voting-Testing/prototype/
+
+So far, we have implemented:
 
 - A unified React frontend using hooks, replacing three separate
   frontends in the original version of Polis.
