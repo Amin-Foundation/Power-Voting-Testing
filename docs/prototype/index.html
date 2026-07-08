@@ -123,8 +123,23 @@
   .brand-lg .sub { font-size: 13px; color: var(--mediumGray); }
 
   .lede { color: var(--text); margin: 0 0 24px; }
-  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
   .row { display: flex; gap: 12px; align-items: center; }
+
+  /* wallet connect options */
+  .wgroup-label {
+    font-size: 12px; font-weight: 700; color: var(--mediumGray);
+    text-transform: uppercase; letter-spacing: 0.04em; margin: 18px 0 8px;
+  }
+  .wallet-opt {
+    width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    background: #fff; border: 1px solid #e2ddd5; border-radius: 10px; padding: 12px 15px;
+    cursor: pointer; font-family: inherit; text-align: left; color: var(--text);
+  }
+  .wallet-opt:hover { background: var(--bgOffWhite); border-color: var(--primary); }
+  .wallet-opt:disabled { opacity: 0.6; cursor: default; }
+  .wallet-opt .w-main { font-weight: 700; color: var(--textDark); font-size: 14.5px; }
+  .wallet-opt .w-sub { font-size: 12px; color: var(--mediumGray); }
   .muted { color: var(--mediumGray); font-size: 13px; }
   .hint { font-size: 13px; color: var(--mediumGray); }
 
@@ -481,15 +496,21 @@ async function deriveDemoAddress(publicKey) {
   return "0x" + toHex(h).slice(-40);
 }
 
-async function connectDemoWallet() {
+// Local (non-injected) wallet: demo exploration, or a stand-in for a hardware
+// wallet in this prototype. In production the "hardware" mode connects a real
+// device over WebHID / Ledger Live / WalletConnect; here it uses an in-memory
+// keypair so the tailored flow (sign once, then vote without the device) can be
+// walked end to end. The key is non-extractable and never persisted or shown.
+async function connectLocalWallet(mode) {
   var kp = await crypto.subtle.generateKey(
     { name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]
   );
   var addr = await deriveDemoAddress(kp.publicKey);
-  // NOTE: kp.privateKey is a non-extractable CryptoKey held only in memory.
-  wallet = { address: addr, mode: "demo", _demoKey: kp };
+  wallet = { address: addr, mode: mode, _demoKey: kp };
   return wallet;
 }
+function connectDemoWallet() { return connectLocalWallet("demo"); }
+function connectHardwareWallet() { return connectLocalWallet("hardware"); }
 // Resolve an injected EVM provider. Prefers EIP-6963 (the modern provider
 // announcement current MetaMask uses), falls back to window.ethereum and the
 // multi-wallet providers[] array. Returns null if nothing is available.
@@ -543,7 +564,7 @@ async function signChallenge(message) {
   }
   var data = new TextEncoder().encode(message);
   var sigBuf = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, wallet._demoKey.privateKey, data);
-  return { sig: "0x" + toHex(sigBuf), scheme: "p256-ecdsa(demo)", _verifyKey: wallet._demoKey.publicKey };
+  return { sig: "0x" + toHex(sigBuf), scheme: "p256-ecdsa(" + wallet.mode + ")", _verifyKey: wallet._demoKey.publicKey };
 }
 // Verify (demo path only — proves signer==address in-browser).
 async function verifyDemoSignature(message, sigHex, publicKey, expectedAddr) {
@@ -650,11 +671,12 @@ function renderWalletChip() {
   var c = document.getElementById("walletChip");
   if (!wallet) { c.innerHTML = ""; return; }
   var demo = wallet.mode === "demo";
+  var label = wallet.mode === "demo" ? "demo" : (wallet.mode === "hardware" ? "hardware" : "");
   c.innerHTML =
     '<span class="wallet-chip ' + (demo ? "demo" : "") + '">' +
       '<span class="dotg"></span>' +
       '<span class="addr">' + shortAddr(wallet.address) + '</span>' +
-      (demo ? '<span class="muted" style="color:#e0a45a">demo</span>' : '') +
+      (label ? '<span class="muted" style="color:' + (demo ? "#e0a45a" : "#9db4a3") + '">' + label + '</span>' : '') +
     '</span> ' +
     '<button class="link" id="disconnectBtn">disconnect</button>';
 }
@@ -667,17 +689,36 @@ function viewConnect() {
       '<div class="sub">Nonbinding sentiment & governance polling for the Filecoin community</div>' +
     '</div></div>' +
     '<p class="lede">Sign in with your wallet. A one-time signature proves who you are — ' +
-      'no email, no password. You then pick the <b>profile</b> your vote counts under, and you can ' +
-      'change profile per topic.</p>' +
+      'no email, no password. Any Filecoin / EVM wallet works, <b>including hardware wallets</b>. ' +
+      'You then verify your address and pick the <b>profile</b> your vote counts under.</p>' +
+
+    '<div class="wgroup-label">Browser &amp; mobile wallets</div>' +
     '<div class="stack">' +
-      '<button class="btn" id="connectInjected">Connect wallet</button>' +
-      '<button class="btn btn-outline" id="connectDemo">Use demo wallet (no extension needed)</button>' +
+      '<button class="wallet-opt" id="connectInjected">' +
+        '<span class="w-main">Connect a browser wallet</span>' +
+        '<span class="w-sub">MetaMask, Rabby, Coinbase Wallet, WalletConnect, …</span></button>' +
     '</div>' +
-    '<div class="callout info" style="margin-top:20px;">' +
+
+    '<div class="wgroup-label">Hardware / cold wallets</div>' +
+    '<div class="stack">' +
+      '<button class="wallet-opt" id="connectHardware">' +
+        '<span class="w-main">Connect a hardware wallet</span>' +
+        '<span class="w-sub">Ledger / Trezor — sign once to verify, then vote without the device</span></button>' +
+    '</div>' +
+
+    '<div class="callout safe" style="margin-top:16px;">' +
+      '<b>Hardware wallets are first-class here.</b> You sign a single message to verify your address, ' +
+      'which mints a short-lived session — so you can travel and vote without carrying the device.</div>' +
+    '<div class="callout info">' +
       '<b>Signing is not transacting.</b> Wallet signatures here only prove control of an address. ' +
       'They never move funds, approve tokens, or call contracts.</div>' +
-    '<p class="hint" style="margin-top:10px;">Use a browser wallet such as MetaMask for real signatures, ' +
-    'or the <b>demo wallet</b> — a throwaway keypair generated in memory, never stored or shown — to explore the flow.</p>' +
+
+    '<div class="divider"></div>' +
+    '<button class="wallet-opt" id="connectDemo">' +
+      '<span class="w-main">Explore with a demo wallet</span>' +
+      '<span class="w-sub">No extension needed — a throwaway keypair in memory, never stored or shown</span></button>' +
+    '<p class="hint" style="margin-top:10px;">Prototype note: the browser-wallet path uses your real wallet ' +
+    'and real signatures. Hardware-wallet connection is simulated here so the flow can be demonstrated.</p>' +
   '</div></div>';
 }
 
@@ -704,37 +745,38 @@ function viewOnboard() {
   }).join("");
 
   return '<div class="content">' +
-    '<h2 style="margin:0 0 4px;">Set up your voting profile</h2>' +
+    '<h2 style="margin:0 0 4px;">Verify your wallet and pick a profile</h2>' +
     '<p class="muted" style="margin-top:0;">Signed in as <b style="font-family:monospace;color:var(--textDark)">' + wallet.address + '</b></p>' +
 
-    '<div class="card"><h3>1 · Choose the profile you vote as</h3>' +
-      '<p class="hint" style="margin-top:0;">This is your default. You can switch profile on any individual poll.</p>' +
-      '<div class="role-grid">' + roleCards + '</div>' +
-    '</div>' +
-
-    '<div class="card"><h3>2 · Claim an address <span class="muted" style="font-weight:400;">(optional — vote without your hardware wallet)</span></h3>' +
+    '<div class="card"><h3>1 · Verify your address <span class="muted" style="font-weight:400;">(sign once — lets you vote without your hardware wallet)</span></h3>' +
       '<div class="callout safe">' +
-        '<b>How claiming stays safe:</b> to claim an address you sign a one-time challenge <i>with that address</i>, ' +
-        'proving control. We then issue a short-lived, revocable session so you can vote from this device without ' +
-        'the hardware wallet until it expires. The directory below is for <b>finding</b> your address only — being ' +
-        'listed grants no power; the signature does.</div>' +
+        '<b>How this stays safe:</b> you sign a one-time challenge <i>with your address</i>, proving control. ' +
+        'We then issue a short-lived, revocable session so you can vote from this device — ideal for hardware-wallet ' +
+        'users who do not want to carry the device. The directory below is for <b>finding</b> your address only — ' +
+        'being listed grants no power; the signature does.</div>' +
 
       (sess ?
-        ('<div class="active-profile-bar"><span class="k">Active session for</span>' +
+        ('<div class="active-profile-bar"><span class="k">Verified · session for</span>' +
           '<span class="v" style="font-family:monospace">' + shortAddr(sess.address) + '</span>' +
           '<span class="sess">Valid ' + fmtRemaining(sess.expiresAt - nowMs()) + '</span>' +
           '<button class="btn btn-danger btn-sm" id="revokeSess">Revoke</button></div>')
         : '') +
 
-      '<label class="field">Search the ecosystem directory</label>' +
+      '<button class="btn" id="claimConnected">Verify my connected address</button>' +
+      '<div class="divider"></div>' +
+      '<label class="field">Or find your address in the ecosystem directory</label>' +
       '<input type="text" id="dirSearch" placeholder="Filter by name, role, or address…" />' +
       '<div class="dir-list" id="dirList" style="margin-top:10px;">' + dirRows + '</div>' +
       '<p class="hint" style="margin-top:10px;">' +
         (matchInDir.length
-          ? 'Your connected address is listed above — select it to claim with its known role.'
-          : 'Or claim your <b>currently connected</b> address directly:') +
+          ? 'Your connected address is listed above.'
+          : 'Selecting an entry starts a signature request for that address.') +
       '</p>' +
-      '<button class="btn btn-outline" id="claimConnected">Claim my connected address</button>' +
+    '</div>' +
+
+    '<div class="card"><h3>2 · Choose the profile you vote as</h3>' +
+      '<p class="hint" style="margin-top:0;">This is your default. You can switch profile on any individual poll.</p>' +
+      '<div class="role-grid">' + roleCards + '</div>' +
     '</div>' +
 
     '<div class="row" style="justify-content:flex-end;gap:10px;">' +
@@ -745,7 +787,7 @@ function viewOnboard() {
 }
 
 /* ---------------- claim flow ---------------- */
-function startClaim(targetAddr, roleId, sourceLabel) {
+function startClaim(targetAddr, sourceLabel) {
   var isInjected = wallet.mode === "injected";
   var addressMatches = targetAddr.toLowerCase() === wallet.address.toLowerCase();
 
@@ -762,28 +804,26 @@ function startClaim(targetAddr, roleId, sourceLabel) {
     return;
   }
 
-  var role = roleById(roleId) || roleById(ensureProfile().defaultRole) || ROLES[ROLES.length-1];
   var nonce = randHex(16);
   var issued = nowIso();
   var expires = nowIso(SESSION_TTL_MS);
   var challenge =
-    "Fil Poll — Claim address\n" +
+    "Fil Poll — Verify address ownership\n" +
     "Address: " + targetAddr + "\n" +
-    "Role: " + role.name + "\n" +
     "Nonce: " + nonce + "\n" +
     "Issued: " + issued + "\n" +
     "Expires: " + expires + "\n" +
     "This signature proves control of the address for voting. " +
     "It does NOT authorize any transaction, transfer, or contract call.";
 
-  var demoNote = (wallet.mode === "demo" && !addressMatches)
-    ? '<div class="callout warn">Demo mode: you don\'t hold the key for this directory address, so the ' +
-      'signature is <b>simulated</b> for illustration. With a real wallet, claiming a listed address ' +
+  var demoNote = ((wallet.mode === "demo" || wallet.mode === "hardware") && !addressMatches)
+    ? '<div class="callout warn">Prototype: you do not hold the key for this directory address, so the ' +
+      'signature is <b>simulated</b> for illustration. With a real wallet, verifying a listed address ' +
       'requires connecting <i>that</i> address.</div>'
     : '';
 
   openModal(
-    '<h3>Sign to claim</h3>' +
+    '<h3>Sign to verify</h3>' +
     '<p class="hint">Review the message your wallet will sign. Nothing is broadcast on-chain.</p>' +
     demoNote +
     '<div class="sig-preview">' + escapeHtml(challenge) + '</div>' +
@@ -807,7 +847,7 @@ function startClaim(targetAddr, roleId, sourceLabel) {
       // Record the delegated session. We persist the signature payload the
       // server would check — never any private key.
       var session = {
-        address: targetAddr, role: role.id, sessionId: "sess_" + randHex(8),
+        address: targetAddr, role: ensureProfile().defaultRole || null, sessionId: "sess_" + randHex(8),
         scheme: signed.scheme, signature: signed.sig, nonce: nonce,
         issuedAt: nowMs(), expiresAt: nowMs() + SESSION_TTL_MS,
         verify: verifyNote, revoked: false, source: sourceLabel || "connected"
@@ -815,15 +855,9 @@ function startClaim(targetAddr, roleId, sourceLabel) {
       // one active session per address
       DB.sessions = DB.sessions.filter(function(s){ return s.address.toLowerCase() !== targetAddr.toLowerCase(); });
       DB.sessions.push(session);
-
-      // bind role into profile if claiming own address
-      if (addressMatches) {
-        var prof = ensureProfile();
-        if (!prof.defaultRole) prof.defaultRole = role.id;
-      }
       saveStore();
       closeModal();
-      toast("Address claimed · session valid " + fmtRemaining(SESSION_TTL_MS), "ok");
+      toast("Address verified · session valid " + fmtRemaining(SESSION_TTL_MS), "ok");
       render();
     } catch (e) {
       toast("Signing was cancelled or failed", "err");
@@ -1223,6 +1257,10 @@ function wireEvents() {
       toast(msg, "err"); btn.disabled = false; btn.textContent = "Connect wallet";
     }
   });
+  bind("connectHardware", "click", async function(){
+    try { await connectHardwareWallet(); toast("Hardware wallet connected", "ok"); go(needsOnboard()?"onboard":"dashboard"); }
+    catch(e){ toast("Could not connect hardware wallet", "err"); }
+  });
   bind("connectDemo", "click", async function(){
     try { await connectDemoWallet(); toast("Demo wallet ready", "ok"); go(needsOnboard()?"onboard":"dashboard"); }
     catch(e){ toast("Demo wallet failed", "err"); }
@@ -1241,7 +1279,7 @@ function wireEvents() {
       el.classList.add("selected");
       var d = DB.directory[parseInt(el.getAttribute("data-diridx"),10)];
       selectedDir = d;
-      startClaim(d.addr, d.role, "directory:" + d.name);
+      startClaim(d.addr, "directory:" + d.name);
     });
   });
   bind("dirSearch", "input", function(){
@@ -1253,8 +1291,7 @@ function wireEvents() {
     });
   });
   bind("claimConnected", "click", function(){
-    var prof = ensureProfile();
-    startClaim(wallet.address, prof.defaultRole || "community", "connected");
+    startClaim(wallet.address, "connected");
   });
   bind("revokeSess", "click", function(){
     var sess = activeSessionFor(wallet.address);
